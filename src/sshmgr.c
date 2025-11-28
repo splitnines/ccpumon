@@ -63,7 +63,7 @@ void ssh_main()
     char *result = NULL;
     memset(&result, 0, sizeof(char));
     if (td->num_cmds > 0) {
-        if (ssh_exec(sess, td->cmdlist, td->num_cmds, &prompt_re, &result) == -1) {
+        if (ssh_exec(sess, td->cmdlist, td->num_cmds, &prompt_re, result) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
@@ -78,7 +78,7 @@ void ssh_main()
 
 
 int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
-             char **allresults)
+             char *allresults)
 {
     ssh_channel channel = ssh_channel_new(sess);
     if (channel == NULL)
@@ -103,10 +103,10 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         if (stop_flag)
             break;
 
-        *allresults = malloc(1);
-        if (*allresults == NULL)
+        allresults = malloc(1);
+        if (allresults == NULL)
             RETURN_INT;
-        (*allresults)[0] = '\0';
+        (allresults)[0] = '\0';
 
         for (size_t i = 0; i < numcmds; ++i) {
             if (stop_flag)
@@ -119,18 +119,18 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
                 RETURN_INT;
 
 
-            size_t used = strlen(*allresults);
+            size_t used = strlen(allresults);
             size_t add  = strlen(cmdresult);
-            char *tmp   = (char*)realloc(*allresults, used + add + 1);
+            char *tmp   = (char*)realloc(allresults, used + add + 1);
             if (tmp == NULL) {
                 free(cmdresult); cmdresult = NULL;
-                free(*allresults); allresults = NULL;
+                free(allresults); allresults = NULL;
                 RETURN_INT;
             }
             cmdresult = remove_prompt(cmdresult, PROMPT);
 
-            *allresults = tmp;
-            *allresults = strcat(*allresults, cmdresult);
+            allresults = tmp;
+            allresults = strcat(allresults, cmdresult);
 
             free(cmdresult); cmdresult = NULL;
         }
@@ -138,12 +138,12 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         ssh_channel_write(channel, "\n", 1);
         char *final_output = ssh_read(channel, prompt_re);
         if (final_output) {
-            size_t used = strlen(*allresults);
+            size_t used = strlen(allresults);
             size_t add  = strlen(final_output);
-            char *tmp   = realloc(*allresults, used + add + 1);
+            char *tmp   = realloc(allresults, used + add + 1);
             if (tmp) {
-                *allresults = tmp;
-                strcat(*allresults, final_output);
+                allresults = tmp;
+                strcat(allresults, final_output);
             } else {
                 free(tmp); tmp = NULL;
                 RETURN_INT;
@@ -155,7 +155,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 
         clean_output(allresults);
 
-        printf("%s\n", allresults[0]);
+        printf("%s\n", allresults);
         sleep(1);
     }
 
@@ -236,7 +236,7 @@ regex_t compile_re(const char *pattern)
     return re;
 }
 
-void clean_output(char **all_output)
+void clean_output(char *all_output)
 {
     char *remove[] = {
         "terminal length 0",
@@ -249,7 +249,7 @@ void clean_output(char **all_output)
     size_t sz = sizeof(remove) / sizeof(remove[0]);
     for (size_t i = 0; i < sz; i++) {
         char *ptr;
-        while ((ptr = strstr(*all_output, remove[i])) != NULL) {
+        while ((ptr = strstr(all_output, remove[i])) != NULL) {
             memmove(ptr, ptr + strlen(remove[i]),
                     strlen(ptr + strlen(remove[i])) + 1);
         }
