@@ -6,6 +6,7 @@
 #include <signal.h>
 
 #include "../include/sshmgr.h"
+#include "../include/passwd.h"
 
 
 volatile sig_atomic_t stop_flag = 0;
@@ -25,11 +26,14 @@ void ssh_main(char *host, char *username)
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
 
+    char password[128];
+    passwd(password, sizeof(password));
+
     char *commands[2] = {"show process cpu history\n", "show clock\n"};
     SshArgs sshargs = {
         .host = host,
         .user = username,
-        .password = "cisco",
+        .password = password,
         .num_cmds = 2,
         .cmdlist = commands,
         .timeout = 2
