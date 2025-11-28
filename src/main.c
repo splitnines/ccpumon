@@ -1,8 +1,13 @@
 #include "../include/sshmgr.h"
 
 
-int main()
+int main(int argc, char *argv[])
 {
-    ssh_main();
+    if (argc < 3) {
+        usage();
+        return 1;
+    }
+
+    ssh_main(argv[1], argv[2]);
     return 0;
 }

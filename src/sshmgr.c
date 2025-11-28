@@ -1,3 +1,4 @@
+#include <getopt.h>
 #include <stdbool.h>
 #include <libssh/libssh.h>
 #include <regex.h>
@@ -16,7 +17,7 @@ void siginthdlr(int sig)
 }
 
 
-void ssh_main()
+void ssh_main(char *host, char *username)
 {
     struct sigaction sa;
     sa.sa_handler = siginthdlr;
@@ -26,48 +27,50 @@ void ssh_main()
 
     char *commands[2] = {"show process cpu history\n", "show clock\n"};
     SshArgs sshargs = {
-        .host = "10.0.0.248",
-        .user = "cisco",
+        .host = host,
+        .user = username,
         .password = "cisco",
         .num_cmds = 2,
         .cmdlist = commands,
         .timeout = 2
     };
-    SshArgs *td = &sshargs;
+    SshArgs *psshargs = &sshargs;
 
     ssh_session sess = ssh_new();
     if (sess == NULL)
         ERROR_FAIL("Failed to create ssh session");
 
-    if (td->host[strlen(td->host) - 1] == '\n')
-        td->host[strlen(td->host) - 1] = '\0';
+    if (psshargs->host[strlen(psshargs->host) - 1] == '\n')
+        psshargs->host[strlen(psshargs->host) - 1] = '\0';
 
-    ssh_options_set(sess, SSH_OPTIONS_HOST, td->host);
-    ssh_options_set(sess, SSH_OPTIONS_USER, td->user);
-    ssh_options_set(sess, SSH_OPTIONS_TIMEOUT, &td->timeout);
+    ssh_options_set(sess, SSH_OPTIONS_HOST, psshargs->host);
+    ssh_options_set(sess, SSH_OPTIONS_USER, psshargs->user);
+    ssh_options_set(sess, SSH_OPTIONS_TIMEOUT, &psshargs->timeout);
     ssh_options_set(sess, SSH_OPTIONS_KEY_EXCHANGE, KEX);
 
     if (ssh_connect(sess) != SSH_OK) {
-        ssh_free(sess); sess = NULL;
-        ERROR_FAIL("Connection failed for %s (%s)\n", td->host, ssh_get_error(sess));
+        fprintf(stderr, "Conneciton failed: (%s)\n", ssh_get_error(sess));
+        ssh_free(sess);
+        exit(1);
     }
 
-    if (ssh_userauth_password(sess, NULL, td->password) != SSH_AUTH_SUCCESS) {
+    if (ssh_userauth_password(sess, NULL, psshargs->password) != SSH_AUTH_SUCCESS) {
+        fprintf(stderr, "Authentication failed: (%s)\n", ssh_get_error(sess));
         ssh_disconnect(sess);
-        ssh_free(sess); sess = NULL;
-        ERROR_FAIL("Authentication failed for %s. %s\n", td->host, ssh_get_error(sess));
+        ssh_free(sess);
+        exit(1);
     }
 
     regex_t prompt_re = compile_re(PROMPT);
 
     char *result = NULL;
     memset(&result, 0, sizeof(char));
-    if (td->num_cmds > 0) {
-        if (ssh_exec(sess, td->cmdlist, td->num_cmds, &prompt_re, result) == -1) {
+    if (psshargs->num_cmds > 0) {
+        if (ssh_exec(sess, psshargs->cmdlist, psshargs->num_cmds, &prompt_re, result) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
-            EXIT_FAILURE;
+            exit(1);
         }
     }
     ssh_disconnect(sess);
@@ -150,12 +153,8 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
             }
             free(final_output); final_output = NULL;
         }
-        printf("\033[2J\033[H");
-        fflush(stdout);
+        display_cpu(allresults);
 
-        clean_output(allresults);
-
-        printf("%s\n", allresults);
         sleep(1);
     }
 
@@ -164,9 +163,17 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
     ssh_channel_free(channel); channel = NULL;
     regfree(prompt_re);
 
-    clean_output(allresults);
-
     return 0;
+}
+
+void display_cpu(char *cpu_reading)
+{
+    printf("\033[2J\033[H");
+    fflush(stdout);
+ 
+    clean_output(cpu_reading);
+ 
+    printf("%s\n", cpu_reading);
 }
 
 
@@ -329,4 +336,11 @@ char *remove_prompt(const char *input, const char *pattern)
     regfree(&regx);
 
     return out;
+}
+
+
+// TODO: This needs to be completed.
+void usage()
+{
+    fprintf(stderr, "Usage: %s <host name or IP address> <username>", PROGNAME);
 }

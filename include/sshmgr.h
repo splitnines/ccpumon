@@ -15,6 +15,13 @@
 #include <unistd.h>
 
 
+
+#define PROMPT "^([A-Za-z0-9_.-]+)(\\(config[^(]*\\))?[>#]\\s*$"
+#define KEX "diffie-hellman-group14-sha256,ecdh-sha2-nistp256"
+#define BUF_SIZE 4096
+#define PROGNAME "ccpumon"
+
+
 typedef struct {
     char *host;
     char *user;
@@ -24,10 +31,12 @@ typedef struct {
     size_t timeout;
 } SshArgs;
 
+// Stores CLI user options
+typedef struct {
+    char     *host;
+    char     *username;
+} CommandLineArgs;
 
-#define PROMPT "^([A-Za-z0-9_.-]+)(\\(config[^(]*\\))?[>#]\\s*$"
-#define KEX "diffie-hellman-group14-sha256,ecdh-sha2-nistp256"
-#define BUF_SIZE 4096
 
 
 // Error messages and exit/return codes
@@ -88,11 +97,13 @@ typedef struct {
 
 // functiion declarations
 void siginthdlr(int);
-void ssh_main();
+void ssh_main(char*, char*);
 int ssh_exec(ssh_session, char**, size_t, regex_t*, char*);
 char* ssh_read(ssh_channel, regex_t*);
+void display_cpu(char*);
 regex_t compile_re(const char*);
 void clean_output(char*);
 char *remove_prompt(const char*, const char*);
+void usage();
 
 #endif
