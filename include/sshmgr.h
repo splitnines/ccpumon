@@ -89,10 +89,10 @@ typedef struct {
 // functiion declarations
 void siginthdlr(int);
 void ssh_main();
-int execcmds(ssh_session, char**, size_t, regex_t*, char**);
-char* readprompt(ssh_channel, regex_t*);
+int ssh_exec(ssh_session, char**, size_t, regex_t*, char**);
+char* ssh_read(ssh_channel, regex_t*);
 regex_t compile_re(const char*);
 void clean_output(char**);
-char *remove_prompt_lines(const char*, const char*);
+char *remove_prompt(const char*, const char*);
 
 #endif

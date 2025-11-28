@@ -63,7 +63,7 @@ void ssh_main()
     char *result = NULL;
     memset(&result, 0, sizeof(char));
     if (td->num_cmds > 0) {
-        if (execcmds(sess, td->cmdlist, td->num_cmds, &prompt_re, &result) == -1) {
+        if (ssh_exec(sess, td->cmdlist, td->num_cmds, &prompt_re, &result) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
@@ -77,7 +77,7 @@ void ssh_main()
 }
 
 
-int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
+int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
              char **allresults)
 {
     ssh_channel channel = ssh_channel_new(sess);
@@ -96,7 +96,7 @@ int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
     size_t n = sizeof(disablepaging) / sizeof(disablepaging[0]);
     for (size_t i = 0; i < n; i++) {
         ssh_channel_write(channel, disablepaging[i], strlen(disablepaging[i]));
-        tmp = readprompt(channel, prompt_re);
+        tmp = ssh_read(channel, prompt_re);
         free(tmp); tmp = NULL;
     }
     while (1) {
@@ -114,7 +114,7 @@ int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 
             ssh_channel_write(channel, cmds[i], strlen(cmds[i]));
 
-            char *cmdresult = readprompt(channel, prompt_re);
+            char *cmdresult = ssh_read(channel, prompt_re);
             if (cmdresult == NULL)
                 RETURN_INT;
 
@@ -127,7 +127,7 @@ int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
                 free(*allresults); allresults = NULL;
                 RETURN_INT;
             }
-            cmdresult = remove_prompt_lines(cmdresult, PROMPT);
+            cmdresult = remove_prompt(cmdresult, PROMPT);
 
             *allresults = tmp;
             *allresults = strcat(*allresults, cmdresult);
@@ -136,7 +136,7 @@ int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         }
 
         ssh_channel_write(channel, "\n", 1);
-        char *final_output = readprompt(channel, prompt_re);
+        char *final_output = ssh_read(channel, prompt_re);
         if (final_output) {
             size_t used = strlen(*allresults);
             size_t add  = strlen(final_output);
@@ -170,7 +170,7 @@ int execcmds(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 }
 
 
-char *readprompt(ssh_channel channel, regex_t *prompt_re)
+char *ssh_read(ssh_channel channel, regex_t *prompt_re)
 {
     size_t bufsize = BUF_SIZE;
     char *buffer = (char*)malloc(sizeof(char) * bufsize);
@@ -256,7 +256,7 @@ void clean_output(char **all_output)
     }
 }
 
-char *remove_prompt_lines(const char *input, const char *pattern)
+char *remove_prompt(const char *input, const char *pattern)
 {
     const char *marker = "last 60 seconds";
 
