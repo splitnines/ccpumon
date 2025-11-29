@@ -10,7 +10,6 @@ Monitor the CPU of a Cisco IOS‑XE device via an SSH session in real time.
 
 - Real‑time CPU utilization reporting of a Cisco IOS‑XE device over SSH.
 - Minimal dependencies — built with plain C and a Makefile.
-- Easy to incorporate into scripts or automation workflows (e.g., periodic SSH checks).
 - Works with standard SSH credentials — no need to install additional agents.
 
 ## Requirements
