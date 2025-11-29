@@ -69,7 +69,8 @@ void ssh_main(char *host, char *username)
 
     char *result = NULL;
     if (psshargs->num_cmds > 0) {
-        if (ssh_exec(sess, psshargs->cmdlist, psshargs->num_cmds, &prompt_re, result) == -1) {
+        if (ssh_exec(sess, psshargs->cmdlist, psshargs->num_cmds, &prompt_re,
+                     result, psshargs->host) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
@@ -84,7 +85,7 @@ void ssh_main(char *host, char *username)
 
 
 int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
-             char *allresults)
+             char *allresults, char *host)
 {
     ssh_channel channel = ssh_channel_new(sess);
     if (channel == NULL)
@@ -146,13 +147,11 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
             if (!newptr) {
                 free(raw_results);
                 free(allresults);
-                return -1;     // GCC now knows control flow stops here
+                return -1;
             }
             allresults = newptr;
 
             char *clean_results = remove_prompt(raw_results, PROMPT);
-            free(raw_results); raw_results = NULL;
-
             if (!clean_results) {
                 if (allresults) free(allresults);
                 ssh_channel_send_eof(channel);
@@ -160,6 +159,8 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
                 ssh_channel_free(channel);
                 return -1;
             }
+
+            free(raw_results); raw_results = NULL;
 
             strcat(allresults, clean_results);
             free(clean_results); clean_results = NULL;
@@ -206,7 +207,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
             strcat(allresults, cleaned_final_output);
             free(cleaned_final_output); cleaned_final_output = NULL;
         }
-        display_cpu(allresults);
+        display_cpu(allresults, host);
 
         free(allresults); allresults = NULL;
 
@@ -220,14 +221,15 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
     return 0;
 }
 
-void display_cpu(char *cpu_reading)
+
+void display_cpu(char *cpu_reading, char *host)
 {
     printf("\033[2J\033[H");
     fflush(stdout);
  
     clean_output(cpu_reading);
  
-    printf("%s\n", cpu_reading);
+    printf("%s\nhost: %s\n", cpu_reading, host);
 }
 
 
