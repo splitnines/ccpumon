@@ -44,9 +44,7 @@ ccpumon 192.168.1.1 admin
 ## Use Cases
 
 - Quickly check real‑time CPU usage on IOS‑XE devices with no SNMP configured.
-- Integrate into scripts or cron jobs for periodic CPU health snapshots.
-- Useful for network labs or when managing multiple switches/routers without heavy monitoring infrastructure.
-
+- Useful for lab networks during testing or production to monitor a suspect device.
 ## License
 
 This project is released under the MIT License.
