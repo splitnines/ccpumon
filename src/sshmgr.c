@@ -85,7 +85,7 @@ void ssh_main(char *host, char *username)
 
 
 int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
-             char *allresults, char *host)
+             char *all_results, char *host)
 {
     ssh_channel channel = ssh_channel_new(sess);
     if (channel == NULL)
@@ -107,22 +107,22 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         free(tmp); tmp = NULL;
     }
     while (1) {
-        if (stop_flag) {
+        if (stop_flag)
             break;
-        }
 
-        allresults = malloc(1);
-        if (allresults == NULL) {
+        all_results = malloc(1);
+        if (all_results == NULL) {
             ssh_channel_send_eof(channel);
             ssh_channel_close(channel);
             ssh_channel_free(channel); channel = NULL;
             return -1;
         }
-        (allresults)[0] = '\0';
+        (all_results)[0] = '\0';
 
         for (size_t i = 0; i < numcmds; ++i) {
+
             if (stop_flag) {
-                if (allresults) free(allresults);
+                if (all_results) free(all_results);
                 ssh_channel_send_eof(channel);
                 ssh_channel_close(channel);
                 ssh_channel_free(channel);
@@ -136,24 +136,24 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
                 ssh_channel_send_eof(channel);
                 ssh_channel_close(channel);
                 ssh_channel_free(channel);
-                free(allresults);
+                free(all_results);
                 return -1;
             }
 
-            size_t used = strlen(allresults);
+            size_t used = strlen(all_results);
             size_t add  = strlen(raw_results);
  
-            char *newptr = realloc(allresults, used + add + 1);
+            char *newptr = realloc(all_results, used + add + 1);
             if (!newptr) {
                 free(raw_results);
-                free(allresults);
+                free(all_results);
                 return -1;
             }
-            allresults = newptr;
+            all_results = newptr;
 
-            char *clean_results = remove_prompt(raw_results, PROMPT);
-            if (!clean_results) {
-                if (allresults) free(allresults);
+            char *cleaned_results = remove_prompt(raw_results, PROMPT);
+            if (!cleaned_results) {
+                free(all_results);
                 ssh_channel_send_eof(channel);
                 ssh_channel_close(channel);
                 ssh_channel_free(channel);
@@ -162,13 +162,13 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 
             free(raw_results); raw_results = NULL;
 
-            strcat(allresults, clean_results);
-            free(clean_results); clean_results = NULL;
+            strcat(all_results, cleaned_results);
+            free(cleaned_results); cleaned_results = NULL;
 
         }
 
         if (stop_flag) {
-            free(allresults);
+            free(all_results);
             ssh_channel_send_eof(channel);
             ssh_channel_close(channel);
             ssh_channel_free(channel);
@@ -179,7 +179,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 
         char *raw_final_output = ssh_read(channel, prompt_re);
         if (!raw_final_output) {
-            free(allresults);
+            free(all_results);
             ssh_channel_send_eof(channel);
             ssh_channel_close(channel);
             ssh_channel_free(channel);
@@ -190,12 +190,12 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         free(raw_final_output); raw_final_output = NULL;
 
         if (cleaned_final_output) {
-            size_t used = strlen(allresults);
+            size_t used = strlen(all_results);
             size_t add  = strlen(cleaned_final_output);
 
-            char *tmp = realloc(allresults, used + add + 1);
+            char *tmp = realloc(all_results, used + add + 1);
             if (!tmp) {
-                free(allresults);
+                free(all_results);
                 free(cleaned_final_output);
                 ssh_channel_send_eof(channel);
                 ssh_channel_close(channel);
@@ -203,13 +203,13 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
                 return -1;
             }
 
-            allresults = tmp;
-            strcat(allresults, cleaned_final_output);
+            all_results = tmp;
+            strcat(all_results, cleaned_final_output);
             free(cleaned_final_output); cleaned_final_output = NULL;
         }
-        display_cpu(allresults, host);
+        display_cpu(all_results, host);
 
-        free(allresults); allresults = NULL;
+        free(all_results); all_results = NULL;
 
         sleep(1);
     }
