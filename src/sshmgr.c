@@ -229,7 +229,8 @@ void display_cpu(char *cpu_reading, char *host)
  
     clean_output(cpu_reading);
  
-    printf("%s\nhost: %s\n", cpu_reading, host);
+    printf("%shost: %s", cpu_reading, host);
+    fflush(stdout);
 }
 
 
