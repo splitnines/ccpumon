@@ -66,13 +66,8 @@ void ssh_main(char *host, char *username)
 
     regex_t prompt_re = compile_re(PROMPT);
 
-    // TODO: refactor ssh_exec() to take the sshargs pointer and don't use
-    // results in the args list.  Results should be defined in ssh_exec() 
-    // contained within the function.
-    char *result = NULL;
     if (psshargs->num_cmds > 0) {
-        if (ssh_exec(sess, psshargs->cmdlist, psshargs->num_cmds, &prompt_re,
-                     result, psshargs->host) == -1) {
+        if (ssh_exec(sess, psshargs, &prompt_re) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
@@ -87,8 +82,7 @@ void ssh_main(char *host, char *username)
 }
 
 
-int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
-             char *all_results, char *host)
+int ssh_exec(ssh_session sess, SshArgs *sshargs, regex_t *prompt_re)
 {
     ssh_channel channel = ssh_channel_new(sess);
     if (channel == NULL)
@@ -113,7 +107,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         if (stop_flag)
             break;
 
-        all_results = malloc(1);
+        char *all_results = malloc(1);
         if (all_results == NULL) {
             ssh_channel_send_eof(channel);
             ssh_channel_close(channel);
@@ -122,8 +116,8 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
         }
         (all_results)[0] = '\0';
 
-        for (size_t i = 0; i < numcmds; ++i) {
-            ssh_channel_write(channel, cmds[i], strlen(cmds[i]));
+        for (size_t i = 0; i < sshargs->num_cmds; ++i) {
+            ssh_channel_write(channel, sshargs->cmdlist[i], strlen(sshargs->cmdlist[i]));
 
             char *raw_results = ssh_read(channel, prompt_re);
             if (raw_results == NULL) {
@@ -193,7 +187,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
             strcat(all_results, cleaned_final_output);
             free(cleaned_final_output); cleaned_final_output = NULL;
         }
-        display_cpu(all_results, host);
+        display_cpu(all_results, sshargs->host);
 
         free(all_results); all_results = NULL;
 
