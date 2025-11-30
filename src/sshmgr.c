@@ -10,7 +10,6 @@
 
 
 volatile sig_atomic_t stop_flag = 0;
-
 void siginthdlr(int sig)
 {
     (void)sig;
@@ -67,6 +66,9 @@ void ssh_main(char *host, char *username)
 
     regex_t prompt_re = compile_re(PROMPT);
 
+    // TODO: refactor ssh_exec() to take the sshargs pointer and don't use
+    // results in the args list.  Results should be defined in ssh_exec() 
+    // contained within the function.
     char *result = NULL;
     if (psshargs->num_cmds > 0) {
         if (ssh_exec(sess, psshargs->cmdlist, psshargs->num_cmds, &prompt_re,
@@ -77,6 +79,7 @@ void ssh_main(char *host, char *username)
             exit(1);
         }
     }
+
     ssh_disconnect(sess);
 
     ssh_free(sess); sess = NULL;

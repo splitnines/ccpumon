@@ -111,7 +111,7 @@ clean:
 -include $(DEPS)
 
 # ===============================
-# Install target
+# Install target into ~/.local/bin
 # ===============================
 
 PREFIX      := $(HOME)/.local
