@@ -207,6 +207,7 @@ int ssh_exec(ssh_session sess, char **cmds, size_t numcmds, regex_t *prompt_re,
 
 void display_cpu(char *cpu_reading, char *host)
 {
+    // printf("\033[2J\033[H");
     fputs("\033[2J\033[H", stdout);
     fflush(stdout);
  
@@ -248,21 +249,27 @@ char *ssh_read(ssh_channel channel, regex_t *prompt_re)
         int nbytes = ssh_channel_read_timeout(channel, buffer + totalbytes,
                                               readbytes, 0, TIMEOUTMS);
 
-        if (nbytes == SSH_EOF)
+        if (nbytes == SSH_EOF) {
+            printf("SSH_EOF\n");
+            exit(1);
             break;
+        }
 
         if (nbytes == SSH_ERROR) {
             free(buffer); buffer = NULL;
             RETURN_NULL;
         }
 
-        // nbytes == 0;
-        if (nbytes == SSH_OK) {
-            if (++idlecnt > MAXIDLE)
+        if (nbytes == 0) {
+            if (++idlecnt > MAXIDLE) {
+                printf("HIT MAXIDLE\n");
+                exit(1);
                 break;
+            }
+            printf("ZERO NBYTES\n");
+            exit(1);
             continue;
         }
-
         idlecnt = 0;
         totalbytes += nbytes;
         buffer[totalbytes] = '\0';
