@@ -110,5 +110,17 @@ clean:
 # --- Include auto-generated dependencies ---
 -include $(DEPS)
 
+# ===============================
+# Install target
+# ===============================
+
+PREFIX      := $(HOME)/.local
+BINDIR      := $(PREFIX)/bin
+
+install: $(BLD_DIR)/$(TARGET)
+	@echo "Installing $(TARGET) to $(BINDIR)"
+	mkdir -p $(BINDIR)
+	cp $(BLD_DIR)/$(TARGET) $(BINDIR)/$(TARGET)
+
 .PHONY: all clean debug tests
 
