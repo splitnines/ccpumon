@@ -25,9 +25,6 @@ void ssh_main(char *host, char *username)
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
 
-    char password[128];
-    passwd(password, sizeof(password));
-
     char *commands[2] = {
         "show process cpu history\n", 
         "show clock\n"
@@ -36,7 +33,6 @@ void ssh_main(char *host, char *username)
     SshArgs sshargs = {
         .host = host,
         .user = username,
-        .password = password,
         .num_cmds = sizeof(commands) / sizeof(commands[0]),
         .cmdlist = commands,
         .timeout = 2
@@ -61,12 +57,21 @@ void ssh_main(char *host, char *username)
         exit(1);
     }
 
-    if (ssh_userauth_password(sess, NULL, psshargs->password) != SSH_AUTH_SUCCESS) {
+    const size_t max_pw_len = 128;
+    char *password = malloc(max_pw_len + 1);
+    if (!password)
+        EXIT_FAILURE;
+    passwd(password, max_pw_len + 1);
+
+    if (ssh_userauth_password(sess, NULL, password) != SSH_AUTH_SUCCESS) {
         fprintf(stderr, "Authentication failed: (%s)\n", ssh_get_error(sess));
         ssh_disconnect(sess);
         ssh_free(sess);
         exit(1);
     }
+
+    memset(password, 0, max_pw_len + 1);
+    free(password);
 
     regex_t prompt_re = compile_re(PROMPT);
 
@@ -99,7 +104,11 @@ int ssh_exec(ssh_session sess, SshArgs *sshargs, regex_t *prompt_re)
         RETURN_INT;
 
     // Disable the paging on the cli
-    char *disablepaging[] = {"terminal length 0\n", "terminal width 0\n"};
+    char *disablepaging[] = {
+        "terminal length 0\n",
+        "terminal width 0\n"
+    };
+
     char *tmp;
     size_t n = sizeof(disablepaging) / sizeof(disablepaging[0]);
     for (size_t i = 0; i < n; i++) {
@@ -313,7 +322,7 @@ char *remove_prompt(const char *input, const char *pattern)
     if (regcomp(&regx, pattern, REG_EXTENDED | REG_NOSUB | REG_NEWLINE) != 0)
         return NULL;
 
-    const char *p = input;
+    const char *pinput = input;
     const char *newline;
     char *out  = NULL;
     size_t out_size = 0;
@@ -321,14 +330,14 @@ char *remove_prompt(const char *input, const char *pattern)
 
     char line[BUF_SIZE];
 
-    while (*p) {
-        newline = strchr(p, '\n');
-        size_t len = newline ? (size_t)(newline - p) : strlen(p);
+    while (*pinput) {
+        newline = strchr(pinput, '\n');
+        size_t len = newline ? (size_t)(newline - pinput) : strlen(pinput);
 
         if (len >= sizeof(line))
             len = sizeof(line) - 1;
 
-        memcpy(line, p, len);
+        memcpy(line, pinput, len);
         line[len] = '\0';
 
         if (strstr(line, marker) != NULL) {
@@ -373,7 +382,7 @@ char *remove_prompt(const char *input, const char *pattern)
             out[out_used++] = '\n';
             out[out_used] = '\0';
         }
-        p = newline ? newline + 1 : p + len;
+        pinput = newline ? newline + 1 : pinput + len;
     }
     regfree(&regx);
 

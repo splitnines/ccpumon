@@ -25,7 +25,6 @@
 typedef struct {
     char *host;
     char *user;
-    char *password;
     size_t num_cmds;
     char **cmdlist;
     size_t timeout;
