@@ -23,9 +23,8 @@ Monitor the CPU of a Cisco IOS‑XE device via an SSH session in real time.
 From the top‑level directory:
 
 ```sh
-make
+make && make install
 ```
-
 
 ## Usage
 
