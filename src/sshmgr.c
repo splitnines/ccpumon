@@ -28,12 +28,16 @@ void ssh_main(char *host, char *username)
     char password[128];
     passwd(password, sizeof(password));
 
-    char *commands[2] = {"show process cpu history\n", "show clock\n"};
+    char *commands[2] = {
+        "show process cpu history\n", 
+        "show clock\n"
+    };
+
     SshArgs sshargs = {
         .host = host,
         .user = username,
         .password = password,
-        .num_cmds = 2,
+        .num_cmds = sizeof(commands) / sizeof(commands[0]),
         .cmdlist = commands,
         .timeout = 2
     };
@@ -384,7 +388,6 @@ char *remove_prompt(const char *input, const char *pattern)
 }
 
 
-// TODO: This needs to be completed.
 void usage()
 {
     fprintf(stderr, "Usage: %s <host name or IP address> <username>", PROGNAME);
