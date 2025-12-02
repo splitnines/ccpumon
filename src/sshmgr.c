@@ -37,18 +37,17 @@ void ssh_main(char *host, char *username)
         .cmdlist = commands,
         .timeout = 2
     };
-    SshArgs *psshargs = &sshargs;
 
     ssh_session sess = ssh_new();
     if (sess == NULL)
         ERROR_FAIL("Failed to create ssh session");
 
-    if (psshargs->host[strlen(psshargs->host) - 1] == '\n')
-        psshargs->host[strlen(psshargs->host) - 1] = '\0';
+    if (sshargs.host[strlen(sshargs.host) - 1] == '\n')
+        sshargs.host[strlen(sshargs.host) - 1] = '\0';
 
-    ssh_options_set(sess, SSH_OPTIONS_HOST, psshargs->host);
-    ssh_options_set(sess, SSH_OPTIONS_USER, psshargs->user);
-    ssh_options_set(sess, SSH_OPTIONS_TIMEOUT, &psshargs->timeout);
+    ssh_options_set(sess, SSH_OPTIONS_HOST, sshargs.host);
+    ssh_options_set(sess, SSH_OPTIONS_USER, sshargs.user);
+    ssh_options_set(sess, SSH_OPTIONS_TIMEOUT, &sshargs.timeout);
     ssh_options_set(sess, SSH_OPTIONS_KEY_EXCHANGE, KEX);
 
     if (ssh_connect(sess) != SSH_OK) {
@@ -57,11 +56,11 @@ void ssh_main(char *host, char *username)
         exit(1);
     }
 
-    const size_t max_pw_len = 128;
-    char *password = malloc(max_pw_len + 1);
+    const size_t max_pw_len = 66;
+    char *password = malloc(max_pw_len);
     if (!password)
         EXIT_FAILURE;
-    passwd(password, max_pw_len + 1);
+    passwd(password, max_pw_len);
 
     if (ssh_userauth_password(sess, NULL, password) != SSH_AUTH_SUCCESS) {
         fprintf(stderr, "Authentication failed: (%s)\n", ssh_get_error(sess));
@@ -75,8 +74,8 @@ void ssh_main(char *host, char *username)
 
     regex_t prompt_re = compile_re(PROMPT);
 
-    if (psshargs->num_cmds > 0) {
-        if (ssh_exec(sess, psshargs, &prompt_re) == -1) {
+    if (sshargs.num_cmds > 0) {
+        if (ssh_exec(sess, &sshargs, &prompt_re) == -1) {
             ssh_disconnect(sess);
             ssh_free(sess); sess = NULL;
             regfree(&prompt_re);
