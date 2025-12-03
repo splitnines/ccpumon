@@ -31,7 +31,7 @@ void validate_args(SshArgs *sshargs)
 }
 
 
-void ssh_main(char *host, char *username)
+int ssh_main(char *host, char *username)
 {
     struct sigaction sa;
     sa.sa_handler = siginthdlr;
@@ -103,6 +103,8 @@ void ssh_main(char *host, char *username)
 
     ssh_free(sess); sess = NULL;
     regfree(&prompt_re);
+
+    return 0;
 }
 
 
@@ -238,6 +240,7 @@ int ssh_exec(ssh_session sess, SshArgs *sshargs, regex_t *prompt_re)
     ssh_channel_close(channel);
     ssh_channel_free(channel); channel = NULL;
 
+    puts("\n");
     return 0;
 }
 

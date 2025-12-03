@@ -71,5 +71,6 @@ extern void passwd(char *getpasswd, size_t passwd_size) {
         }
 
         getpasswd[strcspn(getpasswd, "\n")] = '\0';
+
     }
 }
