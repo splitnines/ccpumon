@@ -17,6 +17,20 @@ void siginthdlr(int sig)
 }
 
 
+void validate_args(SshArgs *sshargs)
+{
+    if (strlen(sshargs->host) > 256) {
+        fprintf(stderr, "Invalid host/IP address: input too long\n");
+        exit(1);
+    }
+
+    if (strlen(sshargs->user) > 64) {
+        fprintf(stderr, "Invalid username: input too long\n");
+        exit(1);
+    }
+}
+
+
 void ssh_main(char *host, char *username)
 {
     struct sigaction sa;
@@ -37,6 +51,8 @@ void ssh_main(char *host, char *username)
         .cmdlist = commands,
         .timeout = 2
     };
+
+    validate_args(&sshargs);
 
     ssh_session sess = ssh_new();
     if (sess == NULL)
@@ -87,6 +103,18 @@ void ssh_main(char *host, char *username)
 
     ssh_free(sess); sess = NULL;
     regfree(&prompt_re);
+}
+
+
+void display_cpu(char *cpu_reading, char *host)
+{
+    fputs("\033[2J\033[H", stdout);
+    fflush(stdout);
+ 
+    clean_output(cpu_reading);
+ 
+    printf("%shost: %s", cpu_reading, host);
+    fflush(stdout);
 }
 
 
@@ -211,18 +239,6 @@ int ssh_exec(ssh_session sess, SshArgs *sshargs, regex_t *prompt_re)
     ssh_channel_free(channel); channel = NULL;
 
     return 0;
-}
-
-
-void display_cpu(char *cpu_reading, char *host)
-{
-    fputs("\033[2J\033[H", stdout);
-    fflush(stdout);
- 
-    clean_output(cpu_reading);
- 
-    printf("%shost: %s", cpu_reading, host);
-    fflush(stdout);
 }
 
 

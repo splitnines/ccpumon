@@ -96,6 +96,7 @@ typedef struct {
 
 // functiion declarations
 void siginthdlr(int);
+void validate_args(SshArgs*);
 void ssh_main(char*, char*);
 int ssh_exec(ssh_session, SshArgs*, regex_t*);
 char* ssh_read(ssh_channel, regex_t*);
