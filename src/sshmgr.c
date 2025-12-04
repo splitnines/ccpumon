@@ -78,6 +78,7 @@ int ssh_main(char *host, char *username)
         EXIT_FAILURE;
     passwd(password, max_pw_len);
 
+
     if (ssh_userauth_password(sess, NULL, password) != SSH_AUTH_SUCCESS) {
         fprintf(stderr, "Authentication failed: (%s)\n", ssh_get_error(sess));
         ssh_disconnect(sess);
@@ -143,6 +144,13 @@ int ssh_exec(ssh_session sess, SshArgs *sshargs, regex_t *prompt_re)
     for (size_t i = 0; i < n; i++) {
         ssh_channel_write(channel, disablepaging[i], strlen(disablepaging[i]));
         tmp = ssh_read(channel, prompt_re);
+        if (!tmp) {
+            ssh_channel_send_eof(channel);
+            ssh_channel_close(channel);
+            ssh_channel_free(channel);
+            free(tmp);
+            return -1;
+        }
         free(tmp); tmp = NULL;
     }
     while (1) {
