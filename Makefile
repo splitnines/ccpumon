@@ -120,6 +120,7 @@ BINDIR      := $(PREFIX)/bin
 install: $(BLD_DIR)/$(TARGET)
 	@echo "Installing $(TARGET) to $(BINDIR)"
 	mkdir -p $(BINDIR)
+	rm $(BINDIR)/$(TARGET)
 	cp $(BLD_DIR)/$(TARGET) $(BINDIR)/$(TARGET)
 
 .PHONY: all clean debug tests
